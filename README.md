@@ -229,6 +229,22 @@ Use the `ticket_id` from the API response (`{{ $json.ticket_id }}`) in your noti
 
 ---
 
+## Workflow Screenshots
+
+### Workflow Overview
+<img src="https://github.com/user-attachments/assets/3f5a47f9-db04-4ee4-b402-4fb83ef21e57">
+
+### Screenshot 2
+<img src="https://github.com/user-attachments/assets/542bfb21-265a-4d68-b15e-87b768c0caed">
+
+### Screenshot 3
+<img src="https://github.com/user-attachments/assets/ae7d97e7-9fce-4f7c-ae7a-bee6167ce19d">
+
+### Screenshot 4
+<img src="https://github.com/user-attachments/assets/454d006e-04a7-4bff-9b39-6504e8b878c5">
+
+---
+
 ## Ticket Model
 
 | Column          | Type     | Notes                          |
