@@ -2,6 +2,12 @@
 
 Production-ready FastAPI backend that integrates with an n8n workflow for AI-powered customer support. When the AI confidence score falls below the threshold, n8n escalates the query to human support by creating a ticket via this API.
 
+Live Backend:
+https://backend-1-2fdm.onrender.com
+
+API Documentation:
+https://backend-1-2fdm.onrender.com/docs
+
 ## Tech Stack
 
 | Layer        | Technology              |
