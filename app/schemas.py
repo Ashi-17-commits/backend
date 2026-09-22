@@ -1,8 +1,5 @@
 """
 Pydantic schemas for request validation and response serialization.
-
-Separates the API contract from the ORM layer so that internal
-database changes do not leak into the public API surface.
 """
 
 from datetime import datetime
@@ -18,26 +15,79 @@ from pydantic import BaseModel, ConfigDict, Field
 class TicketCreate(BaseModel):
     """Payload sent by n8n when escalating a query to human support."""
 
-    customer_name: str = Field(..., min_length=1, max_length=255, examples=["John Doe"])
-    customer_query: str = Field(
-        ..., min_length=1, max_length=2000, examples=["How do I reset my password?"]
+    customer_name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        examples=["John Doe"],
     )
-    priority: str = Field(..., min_length=1, max_length=50, examples=["High"])
-    confidence: float = Field(..., ge=0, le=100, examples=[42.5])
-    sentiment: str = Field(..., min_length=1, max_length=50, examples=["Negative"])
+
+    customer_query: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000,
+        examples=["How do I reset my password?"],
+    )
+
+    priority: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        examples=["High"],
+    )
+
+    confidence: float = Field(
+        ...,
+        ge=0,
+        le=100,
+        examples=[42.5],
+    )
+
+    sentiment: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        examples=["Negative"],
+    )
+
+    # Telegram identifiers used for idempotency
+    user_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        examples=["123456789"],
+    )
+
+    message_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        examples=["987"],
+    )
 
 
 class TicketUpdate(BaseModel):
-    """Partial update – only status and priority are mutable via PATCH."""
+    """Partial update – only status and priority are mutable."""
 
-    status: Optional[str] = Field(None, min_length=1, max_length=50, examples=["Resolved"])
-    priority: Optional[str] = Field(None, min_length=1, max_length=50, examples=["Low"])
+    status: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=50,
+        examples=["Resolved"],
+    )
+
+    priority: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=50,
+        examples=["Low"],
+    )
 
     model_config = ConfigDict(extra="forbid")
 
 
 class TicketResponse(BaseModel):
-    """Full ticket representation returned by GET endpoints."""
+    """Full ticket representation."""
 
     id: int
     customer_name: str
@@ -52,7 +102,7 @@ class TicketResponse(BaseModel):
 
 
 class TicketCreateResponse(BaseModel):
-    """Response returned after successfully creating a ticket."""
+    """Response returned after creating or reusing a ticket."""
 
     success: bool = True
     ticket_id: int
@@ -60,7 +110,37 @@ class TicketCreateResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Dashboard schema
+# Failed request schemas
+# ---------------------------------------------------------------------------
+
+class FailedRequestCreate(BaseModel):
+    """Payload used to store a failed request for later review."""
+
+    user_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+    )
+
+    payload: dict
+
+    error: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000,
+    )
+
+
+class FailedRequestResponse(BaseModel):
+    """Response returned after storing a failed request."""
+
+    success: bool = True
+    failed_request_id: int
+    status: str
+
+
+# ---------------------------------------------------------------------------
+# Dashboard
 # ---------------------------------------------------------------------------
 
 class DashboardStats(BaseModel):
@@ -74,10 +154,10 @@ class DashboardStats(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Generic error schema (used in OpenAPI documentation)
+# Error
 # ---------------------------------------------------------------------------
 
 class ErrorResponse(BaseModel):
-    """Standard error envelope returned on failure."""
+    """Standard error envelope."""
 
     detail: str
