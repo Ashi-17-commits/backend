@@ -27,7 +27,6 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from app.rate_limit import limiter
 
-app.state.limiter = limiter
 
 # ---------------------------------------------------------------------------
 # Logging
