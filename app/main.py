@@ -10,7 +10,10 @@ ReDoc:       http://localhost:8000/redoc
 
 import logging
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, status
+
+load_dotenv()
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -20,6 +23,11 @@ from app.config import APP_DESCRIPTION, APP_TITLE, APP_VERSION, CORS_ORIGINS
 from app.database import init_db
 from app.routes import router
 from app.schemas import ErrorResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from app.rate_limit import limiter
+
+app.state.limiter = limiter
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -33,6 +41,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Application factory
 # ---------------------------------------------------------------------------
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title=APP_TITLE,
     description=APP_DESCRIPTION,
@@ -41,6 +50,7 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+app.state.limiter = limiter
 
 # ---------------------------------------------------------------------------
 # CORS – allow localhost origins (frontend + n8n)

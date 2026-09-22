@@ -24,9 +24,47 @@ from app.schemas import (
     TicketResponse,
     TicketUpdate,
 )
+import os
 
+from fastapi.security import OAuth2PasswordRequestForm
+from app.auth import create_access_token
+from app.auth import verify_token
+from fastapi import Request
+from app.rate_limit import limiter
 router = APIRouter()
 
+
+
+# ---------------------------------------------------------------------------
+# POST /login
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/login",
+    summary="Admin login",
+)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+):
+    admin_user = os.getenv("ADMIN_USER")
+    admin_pass = os.getenv("ADMIN_PASS")
+
+    if (
+        form_data.username != admin_user
+        or form_data.password != admin_pass
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_access_token(form_data.username)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
 
 # ---------------------------------------------------------------------------
 # POST /tickets
@@ -36,19 +74,14 @@ router = APIRouter()
     "/tickets",
     response_model=TicketCreateResponse,
     status_code=status.HTTP_201_CREATED,
-    responses={
-        422: {
-            "model": ErrorResponse,
-            "description": "Validation error",
-        },
-    },
-    summary="Create a new support ticket",
 )
+@limiter.limit("20/minute")
 def create_ticket(
+    request: Request,
     ticket_in: TicketCreate,
     db: Session = Depends(get_db),
 ) -> TicketCreateResponse:
-
+    
     ticket = crud.create_ticket(
         db,
         ticket_in,
@@ -101,10 +134,10 @@ def create_failed_request(
 )
 def list_tickets(
     db: Session = Depends(get_db),
+    _: str = Depends(verify_token),
 ) -> List[TicketResponse]:
 
     return crud.get_tickets(db)
-
 
 # ---------------------------------------------------------------------------
 # GET /tickets/{id}
@@ -124,6 +157,7 @@ def list_tickets(
 def get_ticket(
     ticket_id: int,
     db: Session = Depends(get_db),
+    _: str = Depends(verify_token),
 ) -> TicketResponse:
 
     ticket = crud.get_ticket(
@@ -138,7 +172,6 @@ def get_ticket(
         )
 
     return ticket
-
 
 # ---------------------------------------------------------------------------
 # PATCH /tickets/{id}
@@ -159,10 +192,12 @@ def get_ticket(
     },
     summary="Update ticket status or priority",
 )
+@router.patch("/tickets/{ticket_id}")
 def update_ticket(
     ticket_id: int,
     ticket_in: TicketUpdate,
     db: Session = Depends(get_db),
+    _: str = Depends(verify_token),
 ) -> TicketResponse:
 
     if not ticket_in.model_dump(
@@ -206,11 +241,13 @@ def update_ticket(
     },
     summary="Delete a ticket",
 )
+@router.delete("/tickets/{ticket_id}")
 def delete_ticket(
     ticket_id: int,
     db: Session = Depends(get_db),
+    _: str = Depends(verify_token),
 ) -> dict:
-
+    
     deleted = crud.delete_ticket(
         db,
         ticket_id,
@@ -239,8 +276,10 @@ def delete_ticket(
     response_model=DashboardStats,
     summary="Dashboard statistics",
 )
+@router.get("/dashboard")
 def dashboard(
     db: Session = Depends(get_db),
+    _: str = Depends(verify_token),
 ) -> DashboardStats:
 
     return crud.get_dashboard_stats(db)
